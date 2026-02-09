@@ -17,7 +17,7 @@ export class RentService {
   async rentBook(userId: number, bookId: number) {
     const book = await this.bookRepo.findOneBy({ id: bookId });
 
-    if (!book || !book.isAvailable) {
+    if (!book || book.availableCopies <= 0) {
       throw new BadRequestException('Book not available');
     }
 
@@ -37,13 +37,14 @@ export class RentService {
       bookId,
     });
 
-    book.isAvailable = false;
+    book.availableCopies -= 1;
     await this.bookRepo.save(book);
 
     return { message: 'Book Rented Successfully' };
   }
 
   async returnBook(userId: number, bookId: number) {
+    console.log('SERVICE USER -->', userId);
     const rental = await this.rentalRepo.findOne({
       where: {
         userId,
@@ -59,7 +60,14 @@ export class RentService {
     rental.returnedAt = new Date();
     await this.rentalRepo.save(rental);
 
-    await this.bookRepo.update(bookId, { isAvailable: true });
+    const book = await this.bookRepo.findOneBy({ id: bookId });
+
+    if (!book) {
+      throw new BadRequestException('Book not found');
+    }
+
+    book.availableCopies += 1;
+    await this.bookRepo.save(book);
 
     return { message: 'Book returned successfully' };
   }

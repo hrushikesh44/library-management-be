@@ -32,9 +32,6 @@ export class Book {
   @Column()
   availableCopies!: number;
 
-  @Column({ default: true })
-  isAvailable!: boolean;
-
   @CreateDateColumn()
   createdAt!: Date;
 
