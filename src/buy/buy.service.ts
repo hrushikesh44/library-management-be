@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Book } from 'src/books/books.entity';
 import { BookPurchase } from './buy.entity';
 
@@ -43,10 +43,30 @@ export class BuyService {
     };
   }
 
+  // async getMyPurchases(userId: number) {
+  //   return this.purchaseRepo.find({
+  //     where: { userId },
+  //     order: { purchasedAt: 'DESC' },
+  //   });
+  // }
+
   async getMyPurchases(userId: number) {
-    return this.purchaseRepo.find({
+    const purchases = await this.purchaseRepo.find({
       where: { userId },
       order: { purchasedAt: 'DESC' },
     });
+
+    const bookIds = purchases.map((p) => p.bookId);
+
+    const books = await this.bookRepo.find({
+      where: { id: In(bookIds) },
+    });
+
+    const bookMap = new Map(books.map((book) => [book.id, book]));
+
+    return purchases.map((purchase) => ({
+      ...purchase,
+      book: bookMap.get(purchase.bookId),
+    }));
   }
 }

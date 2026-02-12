@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { BookRental } from './rent.entity';
 import { Book } from 'src/books/books.entity';
 
@@ -72,9 +72,28 @@ export class RentService {
     return { message: 'Book returned successfully' };
   }
 
+  // async myRentals(userId: number) {
+  //   return this.rentalRepo.find({
+  //     where: { userId, returnedAt: IsNull() },
+  //   });
+  // }
+
   async myRentals(userId: number) {
-    return this.rentalRepo.find({
+    const rentals = await this.rentalRepo.find({
       where: { userId, returnedAt: IsNull() },
     });
+
+    const bookIds = rentals.map((r) => r.bookId);
+
+    const books = await this.bookRepo.find({
+      where: { id: In(bookIds) },
+    });
+
+    const bookMap = new Map(books.map((book) => [book.id, book]));
+
+    return rentals.map((rental) => ({
+      ...rental,
+      book: bookMap.get(rental.bookId),
+    }));
   }
 }
