@@ -12,9 +12,9 @@ export class RentController {
     return this.rentService.rentBook(req.user.userId, bookId);
   }
 
-  @Post('return/:bookId')
-  returnBook(@Req() req, @Param('bookId') bookId: number) {
-    return this.rentService.returnBook(req.user.userId, bookId);
+  @Post('return/:rentalId')
+  returnBook(@Req() req, @Param('rentalId') rentalId: number) {
+    return this.rentService.returnBook(req.user.userId, rentalId);
   }
 
   @Get('my')

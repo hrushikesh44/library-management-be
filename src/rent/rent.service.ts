@@ -9,7 +9,6 @@ export class RentService {
   constructor(
     @InjectRepository(BookRental)
     private rentalRepo: Repository<BookRental>,
-
     @InjectRepository(Book)
     private bookRepo: Repository<Book>,
   ) {}
@@ -19,17 +18,6 @@ export class RentService {
 
     if (!book || book.availableCopies <= 0) {
       throw new BadRequestException('Book not available');
-    }
-
-    const existingRental = await this.rentalRepo.findOne({
-      where: {
-        bookId,
-        returnedAt: IsNull(),
-      },
-    });
-
-    if (existingRental) {
-      throw new BadRequestException('Book not availble for Rent');
     }
 
     await this.rentalRepo.save({
@@ -43,12 +31,11 @@ export class RentService {
     return { message: 'Book Rented Successfully' };
   }
 
-  async returnBook(userId: number, bookId: number) {
-    console.log('SERVICE USER -->', userId);
+  async returnBook(userId: number, rentalId: number) {
     const rental = await this.rentalRepo.findOne({
       where: {
+        id: rentalId,
         userId,
-        bookId,
         returnedAt: IsNull(),
       },
     });
@@ -60,7 +47,7 @@ export class RentService {
     rental.returnedAt = new Date();
     await this.rentalRepo.save(rental);
 
-    const book = await this.bookRepo.findOneBy({ id: bookId });
+    const book = await this.bookRepo.findOneBy({ id: rental.bookId });
 
     if (!book) {
       throw new BadRequestException('Book not found');
@@ -71,12 +58,6 @@ export class RentService {
 
     return { message: 'Book returned successfully' };
   }
-
-  // async myRentals(userId: number) {
-  //   return this.rentalRepo.find({
-  //     where: { userId, returnedAt: IsNull() },
-  //   });
-  // }
 
   async myRentals(userId: number) {
     const rentals = await this.rentalRepo.find({
@@ -89,11 +70,11 @@ export class RentService {
       where: { id: In(bookIds) },
     });
 
-    const bookMap = new Map(books.map((book) => [book.id, book]));
+    const bookMap = new Map(books.map((b) => [b.id, b]));
 
-    return rentals.map((rental) => ({
-      ...rental,
-      book: bookMap.get(rental.bookId),
+    return rentals.map((r) => ({
+      ...r,
+      book: bookMap.get(r.bookId),
     }));
   }
 }
